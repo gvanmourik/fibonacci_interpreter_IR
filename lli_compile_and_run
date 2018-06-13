@@ -1,9 +1,13 @@
 #! /usr/bin/env bash 
 
 SOURCE_FILE_NAME=$1
+FIB_NUM=$2
+FLAG_1=$3
+FLAG_2=$4
 
 # Compile (-fno-use-cxa-atexit related to the initialization of libstdc++)
 llvm-gcc $SOURCE_FILE_NAME.cpp -S -emit-llvm -fno-use-cxa-atexit -std=c++11 -I$CLANG_HOME/include
 
 # Run
-lli $SOURCE_FILE_NAME.ll
+lli $SOURCE_FILE_NAME.ll \
+	$FIB_NUM $FLAG_1 $FLAG_2
