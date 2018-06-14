@@ -9,5 +9,6 @@ FLAG_2=$4
 llvm-gcc $SOURCE_FILE_NAME.cpp -S -emit-llvm -fno-use-cxa-atexit -std=c++11 -I$CLANG_HOME/include
 
 # Run
+time \
 lli $SOURCE_FILE_NAME.ll \
 	$FIB_NUM $FLAG_1 $FLAG_2
