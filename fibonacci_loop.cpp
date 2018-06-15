@@ -62,6 +62,12 @@ int main(int argc, char* argv[])
 
 	Function *fibFunc = InitFibonacciFnc(context, builder, module, targetFibNum);
 
+	/// Function Pass Manager (optimizer)
+	FPM = make_unique<FunctionPassManager>(mainModule.get());
+
+	FPM->add(createInstructionCombiningPass());
+
+
 	/// Create a JIT
 	std::string collectedErrors;
 	ExecutionEngine *exeEng = 
