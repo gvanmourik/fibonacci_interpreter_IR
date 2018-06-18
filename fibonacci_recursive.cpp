@@ -1,8 +1,10 @@
 #include <llvm/ADT/APInt.h>
-#include <llvm/IR/Verifier.h>
+#include <llvm/ADT/STLExtras.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Argument.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
@@ -14,6 +16,8 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
@@ -29,6 +33,10 @@ using namespace llvm;
 Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* module);
 CallInst* createSubCallInst(Argument *X, Value *constInt, std::string argName, BasicBlock *BB,
 							Function *fnc, std::string callName);
+// std::unique_ptr<legacy::FunctionPassManager> InitializeModuleAndPassManager(
+// 		LLVMContext &context, 
+// 		std::unique_ptr<Module> module);
+
 
 int main(int argc, char* argv[])
 {
@@ -45,11 +53,14 @@ int main(int argc, char* argv[])
 
 	/// Convert and check
 	int targetFibNum = atol(argv[1]);
-	if ( targetFibNum > 29 )
+	if ( targetFibNum > 30 )
 	{
 		perror("Argument passed was too large");
 		return -1;
 	}
+
+	// Modify later for user input
+	bool optimize = true;
 	
 	/// LLVM IR Variables
 	static LLVMContext context;
@@ -58,8 +69,29 @@ int main(int argc, char* argv[])
 	Module *module = mainModule.get();
 	InitializeNativeTarget();
 	InitializeNativeTargetAsmPrinter();
+	// for optimization
+	// FunctionPassManager* FPM = InitializeModuleAndPassManager(context, std::move(mainModule)); 
 
-	Function *fibFunc = InitFibonacciFnc( context, builder, module );
+	Function *FibonacciFnc = InitFibonacciFnc( context, builder, module );
+
+	/// Check for consistency in the generated code
+	verifyFunction(*FibonacciFnc);
+
+	// if ( optimize )
+	// {
+	// 	// mainModule = make_unique<Module>("Fibonacci JIT", context);
+	// 	// mainModule->setDataLayout(TheJIT->getTargetMachine().createDataLayout());
+
+	// 	auto FPM = make_unique<legacy::FunctionPassManager>( mainModule.get() );
+
+	// 	/// Passes
+	// 	// FPM->add( createInstructionCombiningPass() );
+	// 	FPM->add( createReassociatePass() );
+	// 	FPM->doInitialization();
+
+	// 	/// Apply optimzation passes to the Fibonacci Function
+	// 	FPM->run(*FibonacciFnc);
+	// }
 
 	/// Create a JIT
 	// auto engine = EngineKind::JIT;
@@ -79,11 +111,25 @@ int main(int argc, char* argv[])
 
 	std::vector<GenericValue> Args(1);
 	Args[0].IntVal = APInt(32, targetFibNum);
-	GenericValue value = exeEng->runFunction(fibFunc, Args);
+	GenericValue value = exeEng->runFunction(FibonacciFnc, Args);
 
 	outs() << "\n" << *module;
 	outs() << "\n-----------------------------------------\n";
-	outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
+	switch (targetFibNum) 
+	{
+		case(21): 
+			outs() << targetFibNum << "st fibonacci number = " << value.IntVal << "\n";
+			break;
+		case(22):
+			outs() << targetFibNum << "nd fibonacci number = " << value.IntVal << "\n";
+			break;
+		case(23):
+			outs() << targetFibNum << "rd fibonacci number = " << value.IntVal << "\n";
+			break;
+		default:
+			outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
+			break;
+	}
 	outs() << "-----------------------------------------\n";
 
 
@@ -92,12 +138,7 @@ int main(int argc, char* argv[])
 
 Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* module)
 {
-	// std::vector<Type*> fncArgs;
-	// fncArgs.push_back(builder.getInt8Ty()->getPointerTo());
-	// ArrayRef<Type*> argsRef(fncArgs);
-	// FunctionType *fncType = FunctionType::get(builder.getInt32Ty(), argsRef, false);
-	// Function *fibFunc = Function::Create(fncType, Function::ExternalLinkage, "fibFunc", module);
-	Function *fibFunc = cast<Function>(module->getOrInsertFunction("fibFunc", 
+	Function *FibonacciFnc = cast<Function>(module->getOrInsertFunction("FibonacciFnc", 
 																	Type::getInt32Ty(context),
 																	Type::getInt32Ty(context)
 																	));
@@ -105,34 +146,30 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	Value* one = ConstantInt::get(builder.getInt32Ty(), 1);
 	Value* two = ConstantInt::get(builder.getInt32Ty(), 2);
 
-	BasicBlock *EntryBB = BasicBlock::Create(context, "entry", fibFunc);
-	BasicBlock *ContinueBB = BasicBlock::Create(context, "continue", fibFunc);
-	BasicBlock *ExitBB = BasicBlock::Create(context, "exit", fibFunc);
+	BasicBlock *EntryBB = BasicBlock::Create(context, "entry", FibonacciFnc);
+	BasicBlock *ContinueBB = BasicBlock::Create(context, "continue", FibonacciFnc);
+	BasicBlock *ExitBB = BasicBlock::Create(context, "exit", FibonacciFnc);
 	
-	Argument *X = &*fibFunc->arg_begin();
+	Argument *X = &*FibonacciFnc->arg_begin();
 	X->setName("X_Arg");
-	// Value* X_value = dyn_cast<ConstantInt>(X);
 
 	/// BASE case
 	Value *ifCond = new ICmpInst(*EntryBB, ICmpInst::ICMP_SLE, X, two, "if_cond");
 	BranchInst::Create(ExitBB, ContinueBB, ifCond, EntryBB);
-
 	// Return instruction
 	ReturnInst::Create(context, one, ExitBB);
-	///
 
 	/// RECURSIVE case
 	CallInst *callFib1 = createSubCallInst(X, one, "", ContinueBB,
-										fibFunc, "fib1");
+										FibonacciFnc, "fib1");
 	CallInst *callFib2 = createSubCallInst(X, two, "", ContinueBB,
-										fibFunc, "fib2");
+										FibonacciFnc, "fib2");
 	Value *sum = BinaryOperator::CreateAdd(callFib1, callFib2, "sum", ContinueBB);
-	
-	// Return instruction
+	/// Return instruction
 	ReturnInst::Create(context, sum, ContinueBB);
-	///
 
-	return fibFunc;
+
+	return FibonacciFnc;
 }
 
 CallInst* createSubCallInst(Argument *X, Value *constInt, std::string argName, BasicBlock *BB,
@@ -144,4 +181,21 @@ CallInst* createSubCallInst(Argument *X, Value *constInt, std::string argName, B
 
 	return call;
 }
+
+// std::unique_ptr<legacy::FunctionPassManager> InitializeModuleAndPassManager(
+// 		LLVMContext &context, 
+// 		std::unique_ptr<Module> module)
+// {
+// 	/// New module
+// 	module = make_unique<Module>("Fibonacci JIT", context);
+// 	std::unique_ptr<legacy::FunctionPassManager> FPM = 
+// 		make_unique<FunctionPassManager>(module.get());
+
+// 	/// Passes
+// 	FPM->add(createInstructionCombiningPass());
+
+// 	FPM->doInitialization();
+
+// 	return std::move(FPM);
+// }
 
