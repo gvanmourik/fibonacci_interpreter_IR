@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 	InitializeNativeTarget();
 	InitializeNativeTargetAsmPrinter();
 
-	Function *fibFunc = InitFibonacciFnc(context, builder, module, targetFibNum);
+	Function *FibonacciFnc = InitFibonacciFnc(context, builder, module, targetFibNum);
 
 	/// Create a JIT
 	std::string collectedErrors;
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 	}
 
 	std::vector<GenericValue> Args(0); // Empty vector as no args are passed
-	GenericValue value = exeEng->runFunction(fibFunc, Args);
+	GenericValue value = exeEng->runFunction(FibonacciFnc, Args);
 
 	outs() << "\n" << *module;
 	outs() << "\n-----------------------------------------\n";
@@ -92,8 +92,8 @@ int main(int argc, char* argv[])
 
 Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* module, int targetFibNum)
 {
-	Function *fibFunc = 
-		cast<Function>( module->getOrInsertFunction("fibFunc", Type::getInt32Ty(context)) );
+	Function *FibonacciFnc = 
+		cast<Function>( module->getOrInsertFunction("FibonacciFnc", Type::getInt32Ty(context)) );
 
 	Value* zero = ConstantInt::get(builder.getInt32Ty(), 0);
 	Value* one = ConstantInt::get(builder.getInt32Ty(), 1);
@@ -101,51 +101,85 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	Value* N = ConstantInt::get(builder.getInt32Ty(), targetFibNum);
 
 	/// For loop blocks
-	BasicBlock *LoopBB = BasicBlock::Create(context, "loop", fibFunc);
-	BasicBlock *ExitLoopBB = BasicBlock::Create(context, "exitLoop", fibFunc);
+	BasicBlock *LoopBB = BasicBlock::Create(context, "loop", FibonacciFnc);
+	BasicBlock *ExitLoopBB = BasicBlock::Create(context, "exitLoop", FibonacciFnc);
 	/// Nested if/else blocks
-	BasicBlock *IfEntryBB = BasicBlock::Create(context, "ifEntry", fibFunc, ExitLoopBB);
-	BasicBlock *IfTrueBB = BasicBlock::Create(context, "ifTrue", fibFunc, ExitLoopBB);
-	BasicBlock *ElseBB = BasicBlock::Create(context, "else", fibFunc, ExitLoopBB);
+	// BasicBlock *IfEntryBB = BasicBlock::Create(context, "ifEntry", FibonacciFnc, ExitLoopBB);
+	BasicBlock *IfTrueBB = BasicBlock::Create(context, "ifTrue");
+	BasicBlock *ElseBB = BasicBlock::Create(context, "else");
+	BasicBlock *MergeBB = BasicBlock::Create(context, "merge");
 	
 	/// Variables
 	Value *next = zero;	
 	Value *first = zero;	
 	Value *second = one;
-	Value *counter = zero;
+	Value *count = zero;
 	next->setName("next");
 	first->setName("first");
 	second->setName("second");
-	counter->setName("counter");
+	count->setName("count");
 
-	/// For loop
-	BasicBlock *LoopEntryBB = builder.GetInsertBlock(); // START
+	/// For loop *********************************START*********************************
+	BasicBlock *LoopEntryBB = builder.GetInsertBlock();
 	builder.CreateBr(LoopBB);
 	builder.SetInsertPoint(LoopBB);
 
-		/// IF
-		Value *ifCounterLTTwo = builder.CreateICmpULT(counter, two, "ifStmt");
-		builder.CreateCondBr(ifCounterLTTwo, IfTrueBB, ElseBB);
-		/// TRUE
+	PHINode *PhiNodeFor = builder.CreatePHI(Type::getInt32Ty(context), 2, count->getName());
+	PhiNodeFor->addIncoming(count, LoopEntryBB);
+
+	// Value *oldCount = count;
+	// count = PhiNodeFor;
+
+		/// If entry
+		Value *ifcountLTTwo = builder.CreateICmpULT(count, two, "ifStmt");
+		builder.CreateCondBr(ifcountLTTwo, IfTrueBB, ElseBB);
+		
+		/// If
+		FibonacciFnc->getBasicBlockList().push_back(IfTrueBB);
 		builder.SetInsertPoint(IfTrueBB);
-		next = counter;
-		/// FALSE
+		Value *nextIf = count;
+		builder.CreateBr(MergeBB); // terminate IfTrueBB
+		IfTrueBB = builder.GetInsertBlock(); // update IfTrue for the phi node
+		
+		/// Else
+		FibonacciFnc->getBasicBlockList().push_back(ElseBB);
 		builder.SetInsertPoint(ElseBB);
-		next = BinaryOperator::CreateAdd(first, second, "next_new", ElseBB);
+		Value *nextElse = BinaryOperator::CreateAdd(first, second, "next_new", ElseBB);
 		first = second;
-		second = next;
+		second = nextElse;
+		builder.CreateBr(MergeBB); // terminate ElseBB
+		ElseBB = builder.GetInsertBlock(); // update ElseBB for the phi node
 
-		counter = BinaryOperator::CreateAdd(counter, one, "incrementCounter", LoopBB);
+		/// Merge
+		FibonacciFnc->getBasicBlockList().push_back(MergeBB);
+		builder.SetInsertPoint(MergeBB);
+		PHINode *PhiNodeIf = builder.CreatePHI(Type::getInt32Ty(context), 2, "iftmp");
+		PhiNodeIf->addIncoming(nextIf, IfTrueBB);
+		PhiNodeIf->addIncoming(nextElse, ElseBB);
+		next = PhiNodeIf; // update "next"
+
+
+	// Value *StepValue = ConstantFP::get(context, APFloat(1.0));
+	Value *nextCount = BinaryOperator::CreateAdd(count, one, "nextCount", LoopBB);
 	
-	BasicBlock *LoopEndBB = builder.GetInsertBlock(); // END
+	BasicBlock *LoopEndBB = builder.GetInsertBlock();
 
-	// Continue the loop while the counter is less than the target fibonacci number
-	Value *ifCounterLTN = builder.CreateICmpULT(counter, N, "forLoopExitCond");
-	builder.CreateCondBr(ifCounterLTN, LoopBB, ExitLoopBB);
+	// Continue the loop while the count is less than the target fibonacci number
+	Value *ifCountLTN = builder.CreateICmpULT(count, N, "forLoopExitCond");
+	builder.CreateCondBr(ifCountLTN, LoopBB, ExitLoopBB);
 	
 	builder.SetInsertPoint(ExitLoopBB);
+	PhiNodeFor->addIncoming(nextCount, ExitLoopBB);
+
+	// if (oldCount)
+	// 	count;
+	// else
+	// 	NamedValues.erase(count.getName());
+	/// For loop *******************************END*************************************
+
+	/// Update and return the final value of "next"
 	Value *result = next;
 	ReturnInst::Create(context, result, ExitLoopBB);
 
-	return fibFunc;
+	return FibonacciFnc;
 }
