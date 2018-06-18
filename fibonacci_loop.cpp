@@ -169,7 +169,7 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	builder.CreateCondBr(ifCountLTN, LoopBB, ExitLoopBB);
 	
 	builder.SetInsertPoint(ExitLoopBB);
-	PhiNodeFor->addIncoming(nextCount, ExitLoopBB);
+	PhiNodeFor->addIncoming(nextCount, LoopEndBB);
 
 	// if (oldCount)
 	// 	count;
