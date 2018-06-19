@@ -6,7 +6,10 @@ FLAG_1=$3
 FLAG_2=$4
 
 # Compile (-fno-use-cxa-atexit related to the initialization of libstdc++)
-llvm-gcc $SOURCE_FILE_NAME.cpp -S -emit-llvm -fno-use-cxa-atexit -std=c++11 -I$CLANG_HOME/include
+llvm-g++ $SOURCE_FILE_NAME.cpp -S -emit-llvm -fno-use-cxa-atexit -std=c++11 \
+	-I$CLANG_HOME/include 
+
+# Optimize
 
 # Run
 time \
