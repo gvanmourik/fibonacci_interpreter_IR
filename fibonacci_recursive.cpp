@@ -106,6 +106,7 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	Value* two = ConstantInt::get(builder.getInt32Ty(), 2);
 
 	BasicBlock *EntryBB = BasicBlock::Create(context, "entry", FibonacciFnc);
+	BasicBlock *IfBB = BasicBlock::Create(context, "if", FibonacciFnc);
 	BasicBlock *ContinueBB = BasicBlock::Create(context, "continue", FibonacciFnc);
 	BasicBlock *ExitBB = BasicBlock::Create(context, "exit", FibonacciFnc);
 	
@@ -113,9 +114,12 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	X->setName("X_Arg");
 	// Value* X_value = dyn_cast<ConstantInt>(X);
 
+	/// EntryBB
+	BranchInst::Create(IfBB, EntryBB);
+
 	/// BASE case
-	Value *ifCond = new ICmpInst(*EntryBB, ICmpInst::ICMP_SLE, X, two, "if_cond");
-	BranchInst::Create(ExitBB, ContinueBB, ifCond, EntryBB);
+	Value *ifCond = new ICmpInst(*IfBB, ICmpInst::ICMP_SLE, X, two, "if_cond");
+	BranchInst::Create(ExitBB, ContinueBB, ifCond, IfBB);
 
 	// Return instruction
 	ReturnInst::Create(context, one, ExitBB);
