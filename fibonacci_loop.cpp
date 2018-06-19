@@ -104,7 +104,6 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	BasicBlock *EntryBB = BasicBlock::Create(context, "entry", FibonacciFnc);
 	BasicBlock *LoopEntryBB = BasicBlock::Create(context, "loopEntry", FibonacciFnc);
 	BasicBlock *LoopBB = BasicBlock::Create(context, "loop", FibonacciFnc);
-		//insert the following BBs as a nested group before the ExitLoopBB
 		BasicBlock *IfBB = BasicBlock::Create(context, "if", FibonacciFnc, LoopBB);
 		BasicBlock *IfTrueBB = BasicBlock::Create(context, "ifTrue", FibonacciFnc, LoopBB);
 		BasicBlock *ElseBB = BasicBlock::Create(context, "else", FibonacciFnc, LoopBB);
