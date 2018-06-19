@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	InitializeNativeTarget();
 	InitializeNativeTargetAsmPrinter();
 
-	Function *fibFunc = InitFibonacciFnc( context, builder, module );
+	Function *FibonacciFnc = InitFibonacciFnc( context, builder, module );
 
 	/// Create a JIT
 	// auto engine = EngineKind::JIT;
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 
 	std::vector<GenericValue> Args(1);
 	Args[0].IntVal = APInt(32, targetFibNum);
-	GenericValue value = exeEng->runFunction(fibFunc, Args);
+	GenericValue value = exeEng->runFunction(FibonacciFnc, Args);
 
 	outs() << "\n" << *module;
 	outs() << "\n-----------------------------------------\n";
@@ -96,8 +96,8 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	// fncArgs.push_back(builder.getInt8Ty()->getPointerTo());
 	// ArrayRef<Type*> argsRef(fncArgs);
 	// FunctionType *fncType = FunctionType::get(builder.getInt32Ty(), argsRef, false);
-	// Function *fibFunc = Function::Create(fncType, Function::ExternalLinkage, "fibFunc", module);
-	Function *fibFunc = cast<Function>(module->getOrInsertFunction("fibFunc", 
+	// Function *FibonacciFnc = Function::Create(fncType, Function::ExternalLinkage, "FibonacciFnc", module);
+	Function *FibonacciFnc = cast<Function>(module->getOrInsertFunction("FibonacciFnc", 
 																	Type::getInt32Ty(context),
 																	Type::getInt32Ty(context)
 																	));
@@ -105,11 +105,11 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 	Value* one = ConstantInt::get(builder.getInt32Ty(), 1);
 	Value* two = ConstantInt::get(builder.getInt32Ty(), 2);
 
-	BasicBlock *EntryBB = BasicBlock::Create(context, "entry", fibFunc);
-	BasicBlock *ContinueBB = BasicBlock::Create(context, "continue", fibFunc);
-	BasicBlock *ExitBB = BasicBlock::Create(context, "exit", fibFunc);
+	BasicBlock *EntryBB = BasicBlock::Create(context, "entry", FibonacciFnc);
+	BasicBlock *ContinueBB = BasicBlock::Create(context, "continue", FibonacciFnc);
+	BasicBlock *ExitBB = BasicBlock::Create(context, "exit", FibonacciFnc);
 	
-	Argument *X = &*fibFunc->arg_begin();
+	Argument *X = &*FibonacciFnc->arg_begin();
 	X->setName("X_Arg");
 	// Value* X_value = dyn_cast<ConstantInt>(X);
 
@@ -123,16 +123,16 @@ Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* m
 
 	/// RECURSIVE case
 	CallInst *callFib1 = createSubCallInst(X, one, "", ContinueBB,
-										fibFunc, "fib1");
+										FibonacciFnc, "fib1");
 	CallInst *callFib2 = createSubCallInst(X, two, "", ContinueBB,
-										fibFunc, "fib2");
+										FibonacciFnc, "fib2");
 	Value *sum = BinaryOperator::CreateAdd(callFib1, callFib2, "sum", ContinueBB);
 	
 	// Return instruction
 	ReturnInst::Create(context, sum, ContinueBB);
 	///
 
-	return fibFunc;
+	return FibonacciFnc;
 }
 
 CallInst* createSubCallInst(Argument *X, Value *constInt, std::string argName, BasicBlock *BB,
