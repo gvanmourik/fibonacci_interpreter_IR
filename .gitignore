@@ -1,2 +1,3 @@
 *.ll
 .DS_Store
+dot_output_samples/
