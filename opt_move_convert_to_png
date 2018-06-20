@@ -5,7 +5,7 @@ FILENAME=tempDir
 OPT_TARGET_FILE=$1
 CFG_IMG_DIR=$2
 
-OPT_CALL="opt -dot-cfg $OPT_TARGET_FILE"
+OPT_CALL="opt -dot-cfg-only $OPT_TARGET_FILE"
 $OPT_CALL
 echo -e "\n\nOptimization call:"
 echo -e "$OPT_CALL\n"

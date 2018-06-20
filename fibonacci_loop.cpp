@@ -27,8 +27,11 @@
 
 using namespace llvm;
 
-
+/// Function declarations
 Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* module, int targetFibNum);
+
+/// Global variables
+// static std::map<std::string, AllocaInst*> NamedValues;
 
 
 int main(int argc, char* argv[])
@@ -45,8 +48,8 @@ int main(int argc, char* argv[])
 	}
 
 	/// Convert and check
-	int targetFibNum = atol(argv[1]);
-	if ( targetFibNum > 29 )
+	int targetFibNum = atol(argv[1]); //Only needed for loop case. Haven't had time to check.
+	if ( targetFibNum > 30 )
 	{
 		perror("Argument passed was too large");
 		return -1;
@@ -60,7 +63,8 @@ int main(int argc, char* argv[])
 	InitializeNativeTarget();
 	InitializeNativeTargetAsmPrinter();
 
-	Function *fibFunc = InitFibonacciFnc(context, builder, module, targetFibNum);
+	// "+1" Only needed for loop case. Still need to check why.
+	Function *FibonacciFnc = InitFibonacciFnc(context, builder, module, targetFibNum+1);
 
 	/// Function Pass Manager (optimizer)
 	FPM = make_unique<FunctionPassManager>(mainModule.get());
@@ -85,7 +89,7 @@ int main(int argc, char* argv[])
 	}
 
 	std::vector<GenericValue> Args(0); // Empty vector as no args are passed
-	GenericValue value = exeEng->runFunction(fibFunc, Args);
+	GenericValue value = exeEng->runFunction(FibonacciFnc, Args);
 
 	outs() << "\n" << *module;
 	outs() << "\n-----------------------------------------\n";
@@ -117,60 +121,94 @@ int main(int argc, char* argv[])
 
 Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* module, int targetFibNum)
 {
-	Function *fibFunc = 
-		cast<Function>( module->getOrInsertFunction("fibFunc", Type::getInt32Ty(context)) );
+	Function *FibonacciFnc = 
+		cast<Function>( module->getOrInsertFunction("FibonacciFnc", Type::getInt32Ty(context)) );
 
 	Value* zero = ConstantInt::get(builder.getInt32Ty(), 0);
 	Value* one = ConstantInt::get(builder.getInt32Ty(), 1);
 	Value* two = ConstantInt::get(builder.getInt32Ty(), 2);
 	Value* N = ConstantInt::get(builder.getInt32Ty(), targetFibNum);
 
-	/// For loop blocks
-	BasicBlock *LoopBB = BasicBlock::Create(context, "loop", fibFunc);
-	BasicBlock *ExitLoopBB = BasicBlock::Create(context, "exitLoop", fibFunc);
-	/// Nested if/else blocks
-	BasicBlock *IfEntryBB = BasicBlock::Create(context, "ifEntry", fibFunc, ExitLoopBB);
-	BasicBlock *IfTrueBB = BasicBlock::Create(context, "ifTrue", fibFunc, ExitLoopBB);
-	BasicBlock *ElseBB = BasicBlock::Create(context, "else", fibFunc, ExitLoopBB);
+	/// BBs and outline
+	BasicBlock *EntryBB = BasicBlock::Create(context, "entry", FibonacciFnc);
+	BasicBlock *LoopEntryBB = BasicBlock::Create(context, "loopEntry", FibonacciFnc);
+	BasicBlock *LoopBB = BasicBlock::Create(context, "loop", FibonacciFnc);
+		BasicBlock *IfBB = BasicBlock::Create(context, "if"); 			//floating
+		BasicBlock *ThenBB = BasicBlock::Create(context, "ifTrue"); 	//floating
+		BasicBlock *ElseBB = BasicBlock::Create(context, "else"); 		//floating
+		BasicBlock *MergeBB = BasicBlock::Create(context, "merge"); 	//floating
+	BasicBlock *ExitLoopBB = BasicBlock::Create(context, "exitLoop", FibonacciFnc);
 	
 	/// Variables
-	Value *next = zero;	
-	Value *first = zero;	
-	Value *second = one;
-	Value *counter = zero;
-	next->setName("next");
-	first->setName("first");
-	second->setName("second");
-	counter->setName("counter");
+	Value *next, *first, *second, *count, *next1, *next2;
 
-	/// For loop
-	BasicBlock *LoopEntryBB = builder.GetInsertBlock(); // START
-	builder.CreateBr(LoopBB);
+	/// EntryBB
+	builder.SetInsertPoint(EntryBB);
+	// NamedValues["next"] = builder.CreateAlloca(Type::getInt32Ty(context), nullptr, "next");
+	// Allocate and store for mutable variables
+	next = builder.CreateAlloca(Type::getInt32Ty(context), nullptr, "next");
+	first = builder.CreateAlloca(Type::getInt32Ty(context), nullptr, "first");
+	second = builder.CreateAlloca(Type::getInt32Ty(context), nullptr, "second");
+	count = builder.CreateAlloca(Type::getInt32Ty(context), nullptr, "count");
+	builder.CreateStore(zero, next);
+	builder.CreateStore(zero, first);
+	builder.CreateStore(one, second);
+	builder.CreateStore(zero, count);
+
+	// continue to loop entry
+	builder.CreateBr(LoopEntryBB);
+	
+
+	/// LoopEntryBB
+	builder.SetInsertPoint(LoopEntryBB);
+	Value *countVal = builder.CreateLoad(count, "countVal");
+	Value *ifCountLTN = builder.CreateICmpULT(countVal, N, "enterLoopCond");
+	builder.CreateCondBr(ifCountLTN, LoopBB, ExitLoopBB);
+
+	/// LoopBB
 	builder.SetInsertPoint(LoopBB);
+	builder.CreateBr(IfBB);
 
-		/// IF
-		Value *ifCounterLTTwo = builder.CreateICmpULT(counter, two, "ifStmt");
-		builder.CreateCondBr(ifCounterLTTwo, IfTrueBB, ElseBB);
-		/// TRUE
-		builder.SetInsertPoint(IfTrueBB);
-		next = counter;
-		/// FALSE
+		/// IfBB
+		// Nested statements are attached just before adding to the block, so that
+		// their insertion point in LoopBB is certain.
+		FibonacciFnc->getBasicBlockList().push_back(IfBB);
+		builder.SetInsertPoint(IfBB);
+		Value *ifCountLTTwo = builder.CreateICmpULT(countVal, two, "ifStmt");
+		builder.CreateCondBr(ifCountLTTwo, ThenBB, ElseBB);
+
+		/// ThenBB
+		FibonacciFnc->getBasicBlockList().push_back(ThenBB);
+		builder.SetInsertPoint(ThenBB);
+		Value *nextVal = builder.CreateLoad(count, "nextVal");
+		builder.CreateStore(nextVal, next);
+		builder.CreateBr(MergeBB); // terminate ThenBB
+
+		/// ElseBB
+		FibonacciFnc->getBasicBlockList().push_back(ElseBB);
 		builder.SetInsertPoint(ElseBB);
-		next = BinaryOperator::CreateAdd(first, second, "next_new", ElseBB);
-		first = second;
-		second = next;
+		
+		Value *firstVal = builder.CreateLoad(first, "firstVal");
+		Value *secondVal = builder.CreateLoad(second, "secondVal");
+		nextVal = builder.CreateAdd(firstVal, secondVal, "nextVal");
+		builder.CreateStore(nextVal, next);
+		builder.CreateStore(secondVal, first);
+		builder.CreateStore(nextVal, second);
 
-		counter = BinaryOperator::CreateAdd(counter, one, "incrementCounter", LoopBB);
-	
-	BasicBlock *LoopEndBB = builder.GetInsertBlock(); // END
+		builder.CreateBr(MergeBB); // terminate ElseBB
 
-	// Continue the loop while the counter is less than the target fibonacci number
-	Value *ifCounterLTN = builder.CreateICmpULT(counter, N, "forLoopExitCond");
-	builder.CreateCondBr(ifCounterLTN, LoopBB, ExitLoopBB);
-	
+		/// MergeBB
+		FibonacciFnc->getBasicBlockList().push_back(MergeBB);
+		builder.SetInsertPoint(MergeBB);
+		countVal = builder.CreateAdd(countVal, one); //increment
+		builder.CreateStore(countVal, count);
+		builder.CreateBr(LoopEntryBB);
+
+	/// ExitLoopBB
 	builder.SetInsertPoint(ExitLoopBB);
-	Value *result = next;
-	ReturnInst::Create(context, result, ExitLoopBB);
+	Value *finalFibNum = builder.CreateLoad(next, "finalNext");
+	ReturnInst::Create(context, finalFibNum, ExitLoopBB);
 
-	return fibFunc;
+
+	return FibonacciFnc;
 }
