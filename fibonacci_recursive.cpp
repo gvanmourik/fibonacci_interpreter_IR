@@ -115,18 +115,23 @@ int main(int argc, char* argv[])
 
 	outs() << "\n" << *module;
 	outs() << "\n-----------------------------------------\n";
-	switch (targetFibNum) 
-	{
-		case(21): 
+	switch (targetFibNum % 10) {
+		case(1): 
+			if (targetFibNum == 11)
+				outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
 			outs() << targetFibNum << "st fibonacci number = " << value.IntVal << "\n";
 			break;
-		case(22):
+		case(2): 
+			if (targetFibNum == 12)
+				outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
 			outs() << targetFibNum << "nd fibonacci number = " << value.IntVal << "\n";
 			break;
-		case(23):
+		case(3): 
+			if (targetFibNum == 13)
+				outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
 			outs() << targetFibNum << "rd fibonacci number = " << value.IntVal << "\n";
 			break;
-		default:
+		default: 
 			outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
 			break;
 	}
