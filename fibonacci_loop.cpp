@@ -66,12 +66,6 @@ int main(int argc, char* argv[])
 	// "+1" Only needed for loop case. Still need to check why.
 	Function *FibonacciFnc = InitFibonacciFnc(context, builder, module, targetFibNum+1);
 
-	/// Function Pass Manager (optimizer)
-	FPM = make_unique<FunctionPassManager>(mainModule.get());
-
-	FPM->add(createInstructionCombiningPass());
-
-
 	/// Create a JIT
 	std::string collectedErrors;
 	ExecutionEngine *exeEng = 

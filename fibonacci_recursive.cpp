@@ -33,9 +33,6 @@ using namespace llvm;
 Function* InitFibonacciFnc(LLVMContext &context, IRBuilder<> &builder, Module* module);
 CallInst* createSubCallInst(Argument *X, Value *constInt, std::string argName, BasicBlock *BB,
 							Function *fnc, std::string callName);
-// std::unique_ptr<legacy::FunctionPassManager> InitializeModuleAndPassManager(
-// 		LLVMContext &context, 
-// 		std::unique_ptr<Module> module);
 
 
 int main(int argc, char* argv[])
@@ -68,26 +65,7 @@ int main(int argc, char* argv[])
 	std::unique_ptr<Module> mainModule( new Module("fibonacciModule", context) );
 	Module *module = mainModule.get();
 	InitializeNativeTarget();
-	InitializeNativeTargetAsmPrinter();
-	// for optimization
-	// FunctionPassManager* FPM = InitializeModuleAndPassManager(context, std::move(mainModule)); 
-
-	Function *FibonacciFnc = InitFibonacciFnc( context, builder, module );
-
-	/// Check for consistency in the generated code
-	verifyFunction(*FibonacciFnc);
-
-	// if ( optimize )
-	// {
-	// 	// mainModule = make_unique<Module>("Fibonacci JIT", context);
-	// 	// mainModule->setDataLayout(TheJIT->getTargetMachine().createDataLayout());
-
-	// 	auto FPM = make_unique<legacy::FunctionPassManager>( mainModule.get() );
-
-	// 	/// Passes
-	// 	// FPM->add( createInstructionCombiningPass() );
-	// 	FPM->add( createReassociatePass() );
-	// 	FPM->doInitialization();
+	InitializeNativeTargetAsmPrinter(); 
 
 	Function *FibonacciFnc = InitFibonacciFnc( context, builder, module );
 
@@ -188,21 +166,4 @@ CallInst* createSubCallInst(Argument *X, Value *constInt, std::string argName, B
 
 	return call;
 }
-
-// std::unique_ptr<legacy::FunctionPassManager> InitializeModuleAndPassManager(
-// 		LLVMContext &context, 
-// 		std::unique_ptr<Module> module)
-// {
-// 	/// New module
-// 	module = make_unique<Module>("Fibonacci JIT", context);
-// 	std::unique_ptr<legacy::FunctionPassManager> FPM = 
-// 		make_unique<FunctionPassManager>(module.get());
-
-// 	/// Passes
-// 	FPM->add(createInstructionCombiningPass());
-
-// 	FPM->doInitialization();
-
-// 	return std::move(FPM);
-// }
 
