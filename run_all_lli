@@ -1,0 +1,93 @@
+#! /usr/bin/env bash
+
+# Collect inputs
+FIB_NUM=$1
+IS_OPT=$2
+IS_NORM=$3
+
+calc(){ awk "BEGIN { print "$*" }"; }
+
+function collect_time()
+{
+	local time=$(command perl -MTime::HiRes -e 'printf("%.0f\n",Time::HiRes::time()*1000)')
+	echo "$time"
+}
+
+# Give the user some control in the files to run
+if [ "$IS_OPT" == "just_opt" ]
+then
+	echo Running optimized files...
+	# Run recursive
+	initialTime=$(collect_time)
+	lli fibonacci_recursive_opt.ll $FIB_NUM
+	finalTime=$(collect_time)
+	recursiveTimeOpt=$((finalTime-initialTime))
+
+	# Run iterative
+	initialTime=$(collect_time)
+	lli fibonacci_loop_opt.ll $FIB_NUM
+	finalTime=$(collect_time)
+	iterativeTimeOpt=$((finalTime-initialTime))
+
+	echo "Recursive runtime (optimized) = $recursiveTimeOpt ms"
+	echo "Iterative runtime (optimized) = $iterativeTimeOpt ms"
+elif [ "$IS_NORM" == "just_norm"  ]
+then
+	echo Running files...
+	# Run recursive
+        initialTime=$(collect_time)
+        lli fibonacci_recursive.ll $FIB_NUM
+        finalTime=$(collect_time)
+        recursiveTime=$((finalTime-initialTime))
+
+        # Run iterative
+        initialTime=$(collect_time)
+        lli fibonacci_loop.ll $FIB_NUM
+        finalTime=$(collect_time)
+        iterativeTime=$((finalTime-initialTime))
+
+	echo "Recursive runtime = $recursiveTime ms" 
+        echo "Iterative runtime = $iterativeTime ms"
+else
+	echo Running files...
+        # Run recursive
+        initialTime=$(collect_time)
+        lli fibonacci_recursive.ll $FIB_NUM
+        finalTime=$(collect_time)
+        recursiveTime=$((finalTime-initialTime))
+
+        # Run iterative
+        initialTime=$(collect_time)
+        lli fibonacci_loop.ll $FIB_NUM
+        finalTime=$(collect_time)
+        iterativeTime=$((finalTime-initialTime))
+
+	echo Running optimized files...
+        # Run recursive
+        initialTime=$(collect_time)
+        lli fibonacci_recursive_opt.ll $FIB_NUM
+        finalTime=$(collect_time)
+        recursiveTimeOpt=$((finalTime-initialTime))
+
+        # Run iterative
+        initialTime=$(collect_time)
+        lli fibonacci_loop_opt.ll $FIB_NUM
+        finalTime=$(collect_time)
+        iterativeTimeOpt=$((finalTime-initialTime))
+
+	recursiveOptGain=$((recursiveTime-recursiveTimeOpt))
+	iterativeOptGain=$((iterativeTime-iterativeTimeOpt))
+
+	echo -e "\nRuntime results:"
+	echo -e "\tRecursive runtime = $recursiveTime ms"
+        echo -e "\tIterative runtime = $iterativeTime ms"
+        echo -e "\tRecursive runtime (optimized) = $recursiveTimeOpt ms"
+        echo -e "\tIterative runtime (optimized) = $iterativeTimeOpt ms"
+	echo -e "\tRecursive optimization gain = $recursiveOptGain ms"
+	echo -e "\tIterative optimization gain = $iterativeOptGain ms"
+	echo -e "\tRecursive time saved = $(calc $recursiveOptGain/$recursiveTime*100)%"
+	echo -e "\tIterative time saved = $(calc $iterativeOptGain/$iterativeTime*100)%"
+
+fi
+
+

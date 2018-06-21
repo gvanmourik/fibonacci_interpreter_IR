@@ -1,0 +1,24 @@
+#! /usr/bin/env bash
+
+LL_FILE_NAME=$1
+_OPT=_opt
+LL_FILE_NAME_OPT="$LL_FILE_NAME$_OPT" 
+
+OPT_FLAGS=("-mem2reg" "-O3")
+
+echo "Flags to be used:"
+for flag in "${OPT_FLAGS[@]}";
+do
+	echo -e "\t$flag"
+done
+
+echo "Optimizing $LL_FILE_NAME..."
+
+llvm-as -o=$LL_FILE_NAME.bc $LL_FILE_NAME.ll
+opt ${OPT_FLAGS[@]} -o=$LL_FILE_NAME_OPT.bc $LL_FILE_NAME.bc
+llvm-dis -o=$LL_FILE_NAME_OPT.ll $LL_FILE_NAME_OPT.bc
+
+rm $LL_FILE_NAME.bc
+rm $LL_FILE_NAME_OPT.bc
+
+echo "Optimized LLVM assembly code saved to: $LL_FILE_NAME_OPT.ll"
