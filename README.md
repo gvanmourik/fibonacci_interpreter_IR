@@ -17,6 +17,7 @@ Target: x86_64-apple-darwin16.7.0
 Thread model: posix
 InstalledDir: /Library/Developer/CommandLineTools/usr/bin
 ```
+Where Apple LLVM version 9.0.0 uses LLVM 4.0.
 
 ### Installing
 
@@ -62,7 +63,7 @@ Iterative:
 
 ## Built With
 
-* [LLVM 6.0.0](https://releases.llvm.org/6.0.0/docs/ReleaseNotes.html) - The compiler infrastructure used
+* [LLVM 4.0](https://releases.llvm.org/4.0.1/docs/ReleaseNotes.html) - The compiler infrastructure used
 
 ## Acknowledgments
 
