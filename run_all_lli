@@ -79,14 +79,14 @@ else
 	iterativeOptGain=$((iterativeTime-iterativeTimeOpt))
 
 	echo -e "\nRuntime results:"
-	echo -e "\tRecursive runtime = $recursiveTime ms"
-        echo -e "\tIterative runtime = $iterativeTime ms"
-        echo -e "\tRecursive runtime (optimized) = $recursiveTimeOpt ms"
-        echo -e "\tIterative runtime (optimized) = $iterativeTimeOpt ms"
-	echo -e "\tRecursive optimization gain = $recursiveOptGain ms"
-	echo -e "\tIterative optimization gain = $iterativeOptGain ms"
-	echo -e "\tRecursive time saved = $(calc $recursiveOptGain/$recursiveTime*100)%"
-	echo -e "\tIterative time saved = $(calc $iterativeOptGain/$iterativeTime*100)%"
+        	echo -e "\tRecursive runtime = $recursiveTime ms"
+                echo -e "\tIterative runtime = $iterativeTime ms"
+                echo -e "\tRecursive runtime (optimized) = $recursiveTimeOpt ms"
+                echo -e "\tIterative runtime (optimized) = $iterativeTimeOpt ms"
+        	echo -e "\tRecursive optimization gain = $recursiveOptGain ms"
+        	echo -e "\tIterative optimization gain = $iterativeOptGain ms"
+        	echo -e "\tRecursive time saved = $(calc $recursiveOptGain/$recursiveTime*100)%"
+        	echo -e "\tIterative time saved = $(calc $iterativeOptGain/$iterativeTime*100)%"
 
 fi
 
