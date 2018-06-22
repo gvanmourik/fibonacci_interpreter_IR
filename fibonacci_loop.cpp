@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
 	/// Convert and check
 	int targetFibNum = atol(argv[1]); //Only needed for loop case. Haven't had time to check.
-	if ( targetFibNum > 30 )
+	if ( targetFibNum > 48 )
 	{
 		perror("Argument passed was too large");
 		return -1;
