@@ -94,17 +94,26 @@ int main(int argc, char* argv[])
 	switch (targetFibNum % 10) {
 		case(1): 
 			if (targetFibNum == 11)
+			{
 				outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
+				break;
+			}
 			outs() << targetFibNum << "st fibonacci number = " << value.IntVal << "\n";
 			break;
 		case(2): 
 			if (targetFibNum == 12)
+			{
 				outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
+				break;
+			}
 			outs() << targetFibNum << "nd fibonacci number = " << value.IntVal << "\n";
 			break;
 		case(3): 
 			if (targetFibNum == 13)
+			{
 				outs() << targetFibNum << "th fibonacci number = " << value.IntVal << "\n";
+				break;
+			}
 			outs() << targetFibNum << "rd fibonacci number = " << value.IntVal << "\n";
 			break;
 		default: 
