@@ -1,6 +1,8 @@
 *.ll
 .DS_Store
+data/
 dot_output_samples/
 test
 .bc
+run_all_range
 
