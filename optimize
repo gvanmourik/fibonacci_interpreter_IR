@@ -1,23 +1,40 @@
 #! /usr/bin/env bash
 
-LL_FILE_NAME=$1
+#LL_FILE_NAME=$1
+OPT_FLAGS=("-mem2reg")
+
+# Collect additional flags and file name
+for var in "$@"
+do
+	if [ "${var: -3}" == ".ll" ]
+	then
+		LL_FILE="$var"
+		LL_FILE_NAME=${LL_FILE%.ll}
+		echo $LL_FILE_NAME
+	else
+		OPT_FLAGS+=("$var")
+	fi
+done 
+
+# Create the optimized file name
 _OPT=_opt
 LL_FILE_NAME_OPT="$LL_FILE_NAME$_OPT" 
 
-OPT_FLAGS=("-mem2reg" "-O3")
-
+# List flags for the user
 echo "Flags to be used:"
 for flag in "${OPT_FLAGS[@]}";
 do
 	echo -e "\t$flag"
 done
 
+# Optimize
 echo "Optimizing $LL_FILE_NAME..."
 
 llvm-as -o=$LL_FILE_NAME.bc $LL_FILE_NAME.ll
 opt ${OPT_FLAGS[@]} -o=$LL_FILE_NAME_OPT.bc $LL_FILE_NAME.bc
 llvm-dis -o=$LL_FILE_NAME_OPT.ll $LL_FILE_NAME_OPT.bc
 
+# Remove unneeded bit code files
 rm $LL_FILE_NAME.bc
 rm $LL_FILE_NAME_OPT.bc
 
