@@ -5,6 +5,7 @@ FIB_NUM=$2
 FLAG_1=$3
 FLAG_2=$4
 
+echo "Compiling the source files..."
 # Compile (-fno-use-cxa-atexit related to the initialization of libstdc++)
 llvm-g++ $SOURCE_FILE_NAME.cpp -S -emit-llvm -fno-use-cxa-atexit -std=c++11 \
 	-I$CLANG_HOME/include 
@@ -12,6 +13,4 @@ llvm-g++ $SOURCE_FILE_NAME.cpp -S -emit-llvm -fno-use-cxa-atexit -std=c++11 \
 # Optimize
 
 # Run
-time \
-lli $SOURCE_FILE_NAME.ll \
-	$FIB_NUM $FLAG_1 $FLAG_2
+# lli $SOURCE_FILE_NAME.ll $FIB_NUM
